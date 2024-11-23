@@ -1,0 +1,22 @@
+# Core dependencies
+python-dateutil>=2.8.0
+py4j>=0.10.9.3
+pip>=21.0.0
+
+# Apache Flink and related
+apache-flink-libraries==1.17.1
+apache-flink==1.17.1
+pyflink==1.17.1
+
+# Messaging and databases
+kafka-python==2.0.2
+pymongo==4.3.3
+psycopg2-binary==2.9.5
+
+# Web scraping
+beautifulsoup4==4.9.3
+selenium==4.1.0
+requests==2.28.1
+
+# Utils
+python-dotenv==0.19.2 
