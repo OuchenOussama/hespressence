@@ -1,10 +1,17 @@
-# Hespressence - Hespress Comments Processing System
+# Hespressence - Kappa Architecture Based Sentiment Analysis System
 
 ## Overview
 
 **Hespressence** is a system designed to collect and analyze user-generated comments from **Hespress.com**. The system enables both exploratory analysis and real-time sentiment trend detection through a unified stream processing architecture. By adopting the **Kappa Architecture**, it treats all data as streams, simplifying the integration of batch and stream processing for enhanced scalability and consistency.
 
 The system uses Apache Kafka for data ingestion, Apache Flink for stream processing, MongoDB for historical data storage, and PostgreSQL for analysis results and real-time processing. The visualization layer is powered by D3.js, providing an interactive dashboard for sentiment analysis and trend monitoring.
+
+## Architecture
+
+Below is a high-level overview of the **Hespressence** system architecture:
+
+![System Architecture](architecture_diagram.png)
+
 
 ## Features
 
@@ -36,31 +43,17 @@ git clone https://github.com/OuchenOussama/hespressence.git
 cd hespressence
 ```
 
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Docker Setup
+### 2. Docker Setup
 
 To run the necessary services (Kafka, Zookeeper, MongoDB, PostgreSQL) via Docker Compose, run:
 
 ```bash
-docker-compose up
+docker compose up -d --build
 ```
 
-This will start all the services required for the application.
+This will start all the services required for the application and will run the comment scraping process 
 
-### 4. Running the Application
-
-- Start the comment scraping process (if not already running):
-
-```bash
-python src/scraper/scraper_rss.py
-```
-
-- Start the data processing service (real-time and historical processing):
+The data processing service (real-time and historical processing) are started through:
 
 ```bash
 python src/main.py
@@ -68,11 +61,11 @@ python src/main.py
 
 ### 5. Access the Dashboard
 
-Once the system is running, the dashboard for real-time sentiment monitoring can be accessed at the provided address in the browser (configured within your app).
+Once the system is running, the dashboard for real-time sentiment monitoring can be accessed at the provided address in the browser (configured within the app).
 
 ## Configuration
 
-The application's settings are managed through `src/config/settings.py`. Adjust the following parameters as needed:
+The application's settings are managed through `src/config/settings.py` :
 
 - **Kafka settings**: Topic names, broker addresses, and partition strategies.
 - **Flink settings**: Flink cluster configuration, job execution settings.
@@ -85,11 +78,3 @@ The application's settings are managed through `src/config/settings.py`. Adjust 
 - **Processing**: Real-time sentiment analysis is performed using Flink, and the results are sent to PostgreSQL.
 - **Exploratory Analytics**: The dashboard allows for deep analysis of sentiment across different topics and timeframes.
 - **Monitoring**: Track trends and monitor sentiment patterns for ongoing conversations through the dashboard.
-
-## Contributing
-
-Feel free to fork this repository, open issues, and submit pull requests. Contributions are welcome!
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
