@@ -5,7 +5,7 @@ comments_df = pd.read_csv(comments_file)
 
 print(f"Old comment count: {len(comments_df)}")
 
-new_comments_file = "comments_timestamp.csv"
+new_comments_file = "comments_20241123_165603.csv"
 new_comments_df = pd.read_csv(new_comments_file)
 
 merged_df = pd.concat([comments_df, new_comments_df])

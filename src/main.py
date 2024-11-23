@@ -1,5 +1,5 @@
-from datetime import time
 import threading
+from time import sleep
 
 from src.processing.flink_manager import FlinkManager
 from src.scraper.kafka_producer import HespressKafkaProducer
@@ -9,7 +9,7 @@ def run_producer():
     producer = HespressKafkaProducer()
     while True:
         producer.produce_comments()
-        time.sleep(300)  # Run every 5 minutes
+        sleep(300)  # Run every 5 minutes
 
 def run_mongo_consumer():
     consumer = MongoDBConsumer()
