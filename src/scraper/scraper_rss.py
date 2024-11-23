@@ -45,10 +45,10 @@ class HespressScraper:
             for i, comment in enumerate(comment_items, 1):
                 try:
                     comment_text = comment.find('div', class_='comment-text')
-                    
-                    # Get comment score
+                    comment_text = comment_text.text.strip()
+
                     score_element = comment.find('span', class_='comment-recat-number')
-                    score = 0  # default value
+                    score = 0
                     if score_element:
                         try:
                             score = int(score_element.text.strip())
@@ -90,11 +90,11 @@ class HespressScraper:
             time.sleep(1)
 
         if not all_comments: 
-            return pd.DataFrame(columns=['id', 'comment', 'topic', 'article_title', 'article_url'])
+            return pd.DataFrame(columns=['id', 'comment', 'topic', 'article_title', 'article_url', 'score'])
 
         df = pd.DataFrame(all_comments)
         
-        columns = ['id', 'comment', 'topic', 'article_title', 'article_url']
+        columns = ['id', 'comment', 'topic', 'article_title', 'article_url', 'score']
         if all(col in df.columns for col in columns):
             df = df[columns]
         else:

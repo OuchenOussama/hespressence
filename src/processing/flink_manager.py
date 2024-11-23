@@ -1,9 +1,6 @@
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment, EnvironmentSettings
 from ..config.settings import Config
-from ..utils.logger import get_logger
-
-logger = get_logger(__name__)
 
 class FlinkManager:
     def __init__(self):

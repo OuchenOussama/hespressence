@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 @dataclass
 class KafkaConfig:
-    bootstrap_servers: List[str] = ['localhost:9092']
+    bootstrap_servers: List[str] = field(default_factory=lambda: ['localhost:9092'])
     topics_prefix: str = 'hespress.comments'
     group_id: str = 'hespress_group'
 
@@ -24,7 +24,7 @@ class PostgresConfig:
 @dataclass
 class FlinkConfig:
     checkpoint_dir: str = '/tmp/flink-checkpoints'
-    checkpoint_interval: int = 5000  # milliseconds
+    checkpoint_interval: int = 5000
     min_pause_between_checkpoints: int = 500
 
 class Config:

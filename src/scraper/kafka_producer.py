@@ -1,10 +1,10 @@
 from kafka import KafkaProducer
 import json
 from datetime import datetime
-from ..config.settings import Config
-from ..utils.logger import get_logger
 
-logger = get_logger(__name__)
+from scraper.scraper_rss import HespressScraper
+from ..config.settings import Config
+
 
 class HespressKafkaProducer:
     def __init__(self):
@@ -22,7 +22,6 @@ class HespressKafkaProducer:
             comment['timestamp'] = datetime.now().isoformat()
             
             self.producer.send(topic_name, value=comment)
-            logger.info(f"Produced comment to topic: {topic_name}")
 
     def run(self):
         try:
@@ -32,5 +31,4 @@ class HespressKafkaProducer:
                     self.produce_article_comments(article)
                 self.producer.flush()
         except Exception as e:
-            logger.error(f"Error in producer: {str(e)}")
-            raise 
+            raise e

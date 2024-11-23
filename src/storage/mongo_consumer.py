@@ -2,9 +2,6 @@ from kafka import KafkaConsumer
 from pymongo import MongoClient
 import json
 from ..config.settings import Config
-from ..utils.logger import get_logger
-
-logger = get_logger(__name__)
 
 class MongoDBConsumer:
     def __init__(self):
@@ -26,8 +23,6 @@ class MongoDBConsumer:
             for message in self.consumer:
                 comment_data = message.value
                 self.collection.insert_one(comment_data)
-                logger.info(f"Stored comment in MongoDB: {comment_data['id']}")
                 
         except Exception as e:
-            logger.error(f"Error in MongoDB consumer: {str(e)}")
-            raise 
+            raise e

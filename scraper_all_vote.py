@@ -64,9 +64,8 @@ class HespressScraper:
                         print(f"Empty comment text found in article: {article_url}")
                         continue
                     
-                    # Get comment score
                     score_element = comment.find('span', class_='comment-recat-number')
-                    score = 0  # default value
+                    score = 0 
                     if score_element:
                         try:
                             score = int(score_element.text.strip())
