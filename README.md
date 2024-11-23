@@ -53,13 +53,13 @@ docker compose up -d --build
 
 This will start all the services required for the application and will run the comment scraping process 
 
-The data processing service (real-time and historical processing) are started through:
+The data processing service (real-time and historical processing) are started through (automatically after build):
 
 ```bash
-python src/main.py
+src/main.py
 ```
 
-### 5. Access the Dashboard
+### 3. Access the Dashboard
 
 Once the system is running, the dashboard for real-time sentiment monitoring can be accessed at the provided address in the browser (configured within the app).
 
