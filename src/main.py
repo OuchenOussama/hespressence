@@ -2,7 +2,7 @@ import threading
 from time import sleep
 
 from src.scraper.kafka_producer import HespressDataCollector
-from src.wait_for_kafka import wait_for_kafka
+from src.scraper.wait_for_kafka import wait_for_kafka
 
 def run_collector():
     collector = HespressDataCollector()

@@ -1,61 +1,23 @@
-import csv
 from datetime import datetime
 import feedparser
 import time
 import logging
-import os
 import json
 from kafka import KafkaProducer
-
+from ..processing.mongo_consumer import MongoDBConsumer
 from .scraper_rss import HespressScraper
 
 class HespressDataCollector:
     def __init__(self):
         self.scraper = HespressScraper()
-        self.output_dir = 'data'
-        self.ensure_output_dir()
-        self.connect_with_retry(3)
-
-    def ensure_output_dir(self):
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
-
-    def save_comments_to_csv(self, comments, filename):
-        filepath = os.path.join(self.output_dir, filename)
-        file_exists = os.path.exists(filepath)
-        
-        fieldnames = [
-            'id',
-            'article_title',
-            'article_url',
-            'comment',
-            'topic',
-            'score'
-        ]
-        
-        with open(filepath, 'a', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            
-            if not file_exists:
-                writer.writeheader()
-            
-            for comment in comments:
-                comment_data = {
-                    'id': comment.get('id'),
-                    'article_title': comment.get('article_title'),
-                    'article_url': comment.get('article_url'),
-                    'comment': comment.get('comment'),
-                    'topic': comment.get('topic'),
-                    'score': comment.get('score')
-                }
-                writer.writerow(comment_data)
+        self.connect_kafka_with_retry(3)
+        self.mongo_consumer = MongoDBConsumer(max_retries=3)
 
     def collect_article_comments(self, article):
         comments = self.scraper.get_comments(article['url'], article['title'])
         if comments:
-            filename = f"comments_{datetime.now().strftime('%Y%m%d')}.csv"
-            self.save_comments_to_csv(comments, filename)
-            logging.info(f"Saved {len(comments)} comments for article: {article['title']}")
+            num_saved = self.mongo_consumer.save_comments(comments)
+            logging.info(f"Saved {num_saved} comments for article: {article['title']}")
 
     def collect_comments(self):
         try:
@@ -72,7 +34,7 @@ class HespressDataCollector:
         except Exception as e:
             logging.error(f"Error collecting comments: {str(e)}")
 
-    def connect_with_retry(self, max_retries):
+    def connect_kafka_with_retry(self, max_retries):
         retries = 0
         while retries < max_retries:
             try:
@@ -92,3 +54,7 @@ class HespressDataCollector:
                 time.sleep(5)
         
         raise Exception("Failed to connect to Kafka after maximum retries")
+
+    def __del__(self):
+        if hasattr(self, 'producer'):
+            self.producer.close()

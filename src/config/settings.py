@@ -3,13 +3,13 @@ from typing import List
 
 @dataclass
 class KafkaConfig:
-    bootstrap_servers: List[str] = field(default_factory=lambda: ['localhost:9092'])
+    bootstrap_servers: List[str] = field(default_factory=lambda: ['kafka:9092'])
     topics_prefix: str = 'hespress.comments'
     group_id: str = 'hespress_group'
 
 @dataclass
 class MongoConfig:
-    uri: str = 'mongodb://localhost:27017'
+    uri: str = 'mongodb://mongodb:27017'
     database: str = 'hespress_db'
     collection: str = 'comments'
 

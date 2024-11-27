@@ -47,12 +47,18 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - app-network
+      - flink-network
+    environment:
+      MONGO_INITDB_DATABASE: hespress_db
 
   postgres:
     image: postgres:latest
@@ -140,11 +146,14 @@ services:
       - .:/app
     command: ["python", "-m", "src.main"]
     networks:
+      - app-network
       - flink-network
     environment:
       KAFKA_HOST: 'kafka'
       KAFKA_PORT: '9092'
       KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'
+      MONGODB_URI: 'mongodb://mongodb:27017/'
+      MONGODB_DB: 'hespress_db'
 
 volumes:
   mongodb_data:
