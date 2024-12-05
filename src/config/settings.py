@@ -15,11 +15,15 @@ class MongoConfig:
 
 @dataclass
 class PostgresConfig:
-    host: str = 'localhost'
+    host: str = 'postgres'
     port: int = 5432
     database: str = 'hespress_db'
     user: str = 'postgres'
     password: str = 'postgres'
+
+    @property
+    def connection_string(self) -> str:
+        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 @dataclass
 class FlinkConfig:

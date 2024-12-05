@@ -6,16 +6,36 @@ from kafka.errors import NoBrokersAvailable
 import time
 import logging
 from datetime import datetime
+from .flink_processor import FlinkProcessor
+import concurrent.futures
 
 class MongoDBConsumer:
     def __init__(self, max_retries=3):
+        self.client = None
+        self.consumer = None
         self.connect_mongo_with_retry(max_retries)
         self.connect_kafka_with_retry(max_retries)
+        self.flink_processor = FlinkProcessor()
+        self.shutdown_flag = False
+
+    def shutdown(self):
+        """Handle shutdown signal."""
+        logging.info("Shutdown signal received.")
+        self.shutdown_flag = True
+        self.cleanup()
+
+    def cleanup(self):
+        """Cleanup resources."""
+        if self.client:
+            self.client.close()
+            logging.info("MongoDB client closed.")
+        if self.consumer:
+            self.consumer.close()
+            logging.info("Kafka consumer closed.")
 
     def connect_mongo_with_retry(self, max_retries):
         for i in range(max_retries):
             try:
-                # Connect to MongoDB with increased timeout
                 self.client = MongoClient(
                     Config.MONGO.uri,
                     serverSelectionTimeoutMS=5000,
@@ -26,12 +46,10 @@ class MongoDBConsumer:
                 self.db = self.client[Config.MONGO.database]
                 self.comments_collection = self.db['comments']
                 
-                # Test the connection
                 logging.info("Testing MongoDB connection...")
                 self.client.admin.command('ping')
                 logging.info("Successfully connected to MongoDB")
                 
-                # Setup Kafka consumer if needed
                 if hasattr(Config.KAFKA, 'topics_prefix'):
                     self._setup_kafka_consumer()
                 return
@@ -69,24 +87,47 @@ class MongoDBConsumer:
         self.consumer.subscribe(pattern=topic_pattern)
 
     def save_comments(self, comments):
-        """Save multiple comments to MongoDB."""
+        """Save comments to MongoDB and process with Flink in parallel."""
+        if self.shutdown_flag:
+            logging.warning("Shutdown initiated, skipping comment processing.")
+            return 0
+
         try:
-            comments_to_insert = []
-            for comment in comments:
-                comment_data = {
-                    'id': comment.get('id'),
-                    'article_title': comment.get('article_title'),
-                    'article_url': comment.get('article_url'),
-                    'comment': comment.get('comment'),
-                    'topic': comment.get('topic'),
-                    'score': comment.get('score'),
-                    'created_at': datetime.now()
-                }
-                comments_to_insert.append(comment_data)
-            
-            if comments_to_insert:
-                result = self.comments_collection.insert_many(comments_to_insert)
-                logging.info(f"Inserted {len(result.inserted_ids)} comments into MongoDB")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                mongo_future = executor.submit(self._save_to_mongo, comments)
+                stream_future = executor.submit(self.flink_processor.process_stream, comments)
+                batch_future = executor.submit(self.flink_processor.process_batch, comments)
+
+                # Wait for all futures to complete
+                concurrent.futures.wait([mongo_future, stream_future, batch_future], return_when=concurrent.futures.ALL_COMPLETED)
+
+                for future in [mongo_future, stream_future, batch_future]:
+                    if future.exception():
+                        raise future.exception()
+
+                return mongo_future.result()
+
         except Exception as e:
-            logging.error(f"Error saving comments to MongoDB: {str(e)}")
+            logging.error(f"Error processing comments: {str(e)}")
             raise e
+
+    def _save_to_mongo(self, comments):
+        """Helper method to save comments to MongoDB."""
+        comments_to_insert = []
+        for comment in comments:
+            comment_data = {
+                'id': comment.get('id'),
+                'article_title': comment.get('article_title'),
+                'article_url': comment.get('article_url'),
+                'user_comment': comment.get('comment'),
+                'topic': comment.get('topic'),
+                'score': comment.get('score'),
+                'created_at': datetime.now()
+            }
+            comments_to_insert.append(comment_data)
+        
+        if comments_to_insert:
+            result = self.comments_collection.insert_many(comments_to_insert)
+            logging.info(f"Inserted {len(result.inserted_ids)} comments into MongoDB")
+            return len(result.inserted_ids)
+        return 0

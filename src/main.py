@@ -8,7 +8,7 @@ def run_collector():
     collector = HespressDataCollector()
     while True:
         collector.collect_comments()
-        sleep(300)  # Run every 5 minutes
+        sleep(180)  # Run every 3 minutes
 
 if __name__ == "__main__":
     wait_for_kafka(max_retries=15, retry_delay=15)

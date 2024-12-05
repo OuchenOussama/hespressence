@@ -11,3 +11,5 @@ selenium
 requests
 python-dotenv
 feedparser
+sqlalchemy
+psycopg2-binary
