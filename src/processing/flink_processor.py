@@ -1,10 +1,9 @@
+from .flink_manager import FlinkManager
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment, EnvironmentSettings, Table
 from pyflink.common.typeinfo import Types
 from ..config.settings import Config
-import json
 import logging
-from datetime import datetime
 from typing import List, Dict, Any
 from ..storage.postgres_manager import PostgresManager
 
@@ -12,7 +11,6 @@ class FlinkProcessor:
     def __init__(self):
         # Initialize environments
         self._setup_environments()
-        self._setup_sources_and_sinks()
         self.postgres_manager = PostgresManager()
         
     def _setup_environments(self):
@@ -27,59 +25,16 @@ class FlinkProcessor:
             stream_execution_environment=self.stream_env,
             environment_settings=EnvironmentSettings.new_instance().in_streaming_mode().build()
         )
-
-    def _setup_sources_and_sinks(self):
-        """Setup Kafka source and PostgreSQL sink tables"""
-        # Create Kafka source table for streaming
-        self.table_env.execute_sql("""
-            CREATE TABLE kafka_comments (
-                id STRING,
-                article_title STRING,
-                article_url STRING,
-                user_comment STRING,
-                topic STRING,
-                score DOUBLE,
-                created_at TIMESTAMP(3),
-                processing_time AS PROCTIME()
-            ) WITH (
-                'connector' = 'kafka',
-                'topic' = 'hespress.comments',
-                'properties.bootstrap.servers' = 'kafka:9092',
-                'properties.group.id' = 'flink_consumer_group',
-                'format' = 'json',
-                'scan.startup.mode' = 'earliest-offset'
-            )
-        """)
-
-        # Create PostgreSQL sink table
-        self.table_env.execute_sql("""
-            CREATE TABLE raw_comments (
-                id STRING,
-                article_title STRING,
-                article_url STRING,
-                user_comment STRING,
-                topic STRING,
-                score DOUBLE,
-                created_at TIMESTAMP(3),
-                stored_at TIMESTAMP(3),
-                PRIMARY KEY (id) NOT ENFORCED
-            ) WITH (
-                'connector' = 'jdbc',
-                'url' = 'jdbc:postgresql://postgres:5432/hespress_db',
-                'table-name' = 'raw_comments',
-                'username' = 'postgres',
-                'password' = 'postgres'
-            )
-        """)
+        
+        manager = FlinkManager()
+        manager.create_kafka_source()
+        manager.create_postgres_sink()
 
     def process_stream(self, comments: List[Dict[str, Any]]) -> None:
         """
         Real-time stream processing of comments and store in PostgreSQL
         """
         try:
-            # Store raw comments in PostgreSQL
-            self.postgres_manager.store_comments(comments)
-            
             # Convert comments to DataStream
             comments_stream = self.stream_env.from_collection(
                 collection=comments,
@@ -93,11 +48,12 @@ class FlinkProcessor:
             # Create Table from DataStream
             comments_table = self.table_env.from_data_stream(comments_stream)
             
-            # Insert into PostgreSQL using Flink SQL
+            # Register for SQL querying
             self.table_env.create_temporary_view("temp_comments", comments_table)
             
+            # Insert into PostgreSQL using Flink SQL
             insert_sql = """
-                INSERT INTO raw_comments 
+                INSERT INTO processed_comments 
                 SELECT 
                     id, article_title, article_url, user_comment, 
                     topic, score, created_at,
@@ -106,25 +62,11 @@ class FlinkProcessor:
             """
             
             self.table_env.execute_sql(insert_sql)
+            logging.info("Comments inserted into PostgreSQL successfully.")
             
         except Exception as e:
             logging.error(f"Error in stream processing: {str(e)}")
             raise e
-
-    def _preprocess_comment(self, comment_row):
-        """Prepare comment for NLP processing"""
-        # TODO: Implement text preprocessing
-        return comment_row
-
-    def _apply_nlp_model(self, processed_comment):
-        """Placeholder for NLP model application"""
-        # TODO: Implement NLP model prediction
-        pass
-
-    def _post_process_prediction(self, prediction):
-        """Process and format prediction results"""
-        # TODO: Implement prediction post-processing
-        pass
 
     def process_batch(self, comments: List[Dict[str, Any]]) -> None:
         """
@@ -141,7 +83,6 @@ class FlinkProcessor:
             self.table_env.create_temporary_view("comments_batch", comments_table)
             
             # Example batch analysis query
-            # TODO: Customize based on specific batch processing needs
             analysis_result = self.table_env.sql_query("""
                 SELECT 
                     topic,
@@ -160,10 +101,3 @@ class FlinkProcessor:
         except Exception as e:
             logging.error(f"Error in batch processing: {str(e)}")
             raise e
-
-    def retrain_model(self, historical_data: Table):
-        """
-        Periodic batch processing for model retraining
-        """
-        # TODO: Implement model retraining logic
-        pass

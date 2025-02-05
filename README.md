@@ -1,10 +1,20 @@
-# Hespressence - Kappa Architecture Based Sentiment Analysis System
+# Kappa Architecture Based Sentiment Analysis System for User Comments
 
 ## Overview
 
 **Hespressence** is a system designed to collect and analyze user-generated comments from **Hespress.com**. The system enables both exploratory analysis and real-time sentiment trend detection through a unified stream processing architecture. By adopting the **Kappa Architecture**, it treats all data as streams, simplifying the integration of batch and stream processing for enhanced scalability and consistency.
 
 The system uses Apache Kafka for data ingestion, Apache Flink for stream processing, MongoDB for historical data storage, and PostgreSQL for analysis results and real-time processing. The visualization layer is powered by D3.js, providing an interactive dashboard for sentiment analysis and trend monitoring.
+
+## Project Team
+
+This project was carried out by **Ouchen Oussama** and **Elaaly Hamid**.
+
+## Supervision
+
+The project was supervised by professors **Es-saady Youssef** and **El Hajji Mohamed**.
+
+This project was developed within the program of the **BigData & AI Master's - FPT**, for classes **DeepLearning2** and **BigData2**.
 
 ## Architecture
 
@@ -74,7 +84,7 @@ The application's settings are managed through `src/config/settings.py` :
 
 ## Usage
 
-- **Scraping**: Scrape comments from the website using the `scraper_rss.py` script, which collects data and sends it to Kafka for processing.
+- **Scraping**: Scrape comments from the website using the `scraper_rss.py` script within the Kafka , which collects data and sends it to Flink for processing.
 - **Processing**: Real-time sentiment analysis is performed using Flink, and the results are sent to PostgreSQL.
-- **Exploratory Analytics**: The dashboard allows for deep analysis of sentiment across different topics and timeframes.
-- **Monitoring**: Track trends and monitor sentiment patterns for ongoing conversations through the dashboard.
+- **Monitoring**: Track trends and monitor sentiment patterns for ongoing conversations, deep analysis of sentiment across different topics and timeframes through the dashboard.
+- **Exploratory Analytics**: The Master DataSet persistent historical data storing allows for flexible, ad-hoc metrics in a non predefined manner.

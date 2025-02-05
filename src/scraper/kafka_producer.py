@@ -55,6 +55,11 @@ class HespressDataCollector:
         
         raise Exception("Failed to connect to Kafka after maximum retries")
 
+    def shutdown(self):
+        """Shutdown the data collector."""
+        logging.info("Shutting down data collector.")
+        self.mongo_consumer.shutdown()  # Ensure MongoDB consumer is shut down
+
     def __del__(self):
         if hasattr(self, 'producer'):
             self.producer.close()

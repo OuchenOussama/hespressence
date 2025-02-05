@@ -1,6 +1,7 @@
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment, EnvironmentSettings
 from ..config.settings import Config
+import logging
 
 class FlinkManager:
     def __init__(self):
@@ -17,17 +18,17 @@ class FlinkManager:
             self.env, 
             environment_settings=self.settings
         )
-        
+
     def create_kafka_source(self):
         return self.t_env.execute_sql("""
             CREATE TABLE kafka_comments (
                 id STRING,
-                comment STRING,
+                user_comment STRING,
                 topic STRING,
                 article_title STRING,
                 article_url STRING,
                 score INT,
-                timestamp TIMESTAMP(3),
+                created_at TIMESTAMP(3),
                 proctime AS PROCTIME()
             ) WITH (
                 'connector' = 'kafka',
@@ -38,39 +39,29 @@ class FlinkManager:
             )
         """)
 
-    def create_mongo_source(self):
-        return self.t_env.execute_sql("""
-            CREATE TABLE mongodb_comments (
-                id STRING,
-                comment STRING,
-                topic STRING,
-                article_title STRING,
-                article_url STRING,
-                score INT,
-                timestamp TIMESTAMP(3)
-            ) WITH (
-                'connector' = 'mongodb',
-                'uri' = 'mongodb://localhost:27017',
-                'database' = 'hespress_db',
-                'collection' = 'comments'
-            )
-        """)
-
     def create_postgres_sink(self):
-        return self.t_env.execute_sql("""
-            CREATE TABLE processed_comments (
-                id STRING,
-                comment STRING,
-                topic STRING,
-                score INT,
-                processed_timestamp TIMESTAMP(3),
-                processing_type STRING,
-                PRIMARY KEY (id) NOT ENFORCED
-            ) WITH (
-                'connector' = 'jdbc',
-                'url' = 'jdbc:postgresql://localhost:5432/hespress_db',
-                'table-name' = 'processed_comments',
-                'username' = 'postgres',
-                'password' = 'postgres'
-            )
-        """) 
+        logging.info("Creating processed_comments table in PostgreSQL.")
+        try:
+            self.t_env.execute_sql("""
+                CREATE TABLE IF NOT EXISTS processed_comments (
+                    id STRING,
+                    article_title STRING,
+                    user_comment STRING,
+                    topic STRING,
+                    score DOUBLE,
+                    created_at TIMESTAMP(3),
+                    stored_at TIMESTAMP(3),
+                    PRIMARY KEY (id) NOT ENFORCED
+                ) WITH (
+                    'connector' = 'jdbc',
+                    'hostname' = 'postgres',
+                    'port' = '5432',
+                    'database-name' = 'hespress_db',
+                    'username' = 'postgres',
+                    'password' = 'postgres'
+                )
+            """)
+            logging.info("Table processed_comments created successfully.")
+        except Exception as e:
+            logging.error(f"Error creating processed_comments table: {str(e)}")
+            raise e 

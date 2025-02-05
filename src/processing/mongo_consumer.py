@@ -122,7 +122,7 @@ class MongoDBConsumer:
                 'user_comment': comment.get('comment'),
                 'topic': comment.get('topic'),
                 'score': comment.get('score'),
-                'created_at': datetime.now()
+                'created_at': comment.get('created_at'),
             }
             comments_to_insert.append(comment_data)
         

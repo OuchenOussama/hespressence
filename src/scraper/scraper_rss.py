@@ -58,13 +58,17 @@ class HespressScraper:
                     # Get comment ID from the li element's id attribute
                     comment_id = comment.get('id', '').replace('comment-', '')
                     
+                    # Set created_at to the current timestamp
+                    created_at = datetime.now()  # Set created_at to now
+
                     comment_data = {
                         'id': comment_id,
                         'comment': comment_text,
                         'topic': topic,
                         'article_title': article_title,
                         'article_url': article_url,
-                        'score': score 
+                        'score': score,
+                        'created_at': created_at  # Use the current timestamp
                     }
                     comments.append(comment_data)
                 except Exception as e:
