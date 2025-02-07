@@ -22,7 +22,6 @@ Below is a high-level overview of the **Hespressence** system architecture:
 
 ![System Architecture](architecture_diagram.png)
 
-
 ## Features
 
 - **Data Ingestion**: Kafka is used to ingest comment events in real-time with partitioning for maintaining article-wise comment ordering.
@@ -53,7 +52,15 @@ git clone https://github.com/OuchenOussama/hespressence.git
 cd hespressence
 ```
 
-### 2. Docker Setup
+### 2. Model File Download
+
+Due to the massive size of the `model.h5` file, it has been uploaded to Google Drive. You can download it from the following link:
+
+[Download model.h5](https://drive.google.com/file/d/1KLvUqNJ9HNkYbbA7qw9Z9OfjLeBXs44g/view?usp=sharing)
+
+After downloading, place the file in the `src/model` folder.
+
+### 3. Docker Setup
 
 To run the necessary services (Kafka, Zookeeper, MongoDB, PostgreSQL) via Docker Compose, run:
 
@@ -61,7 +68,7 @@ To run the necessary services (Kafka, Zookeeper, MongoDB, PostgreSQL) via Docker
 docker compose up -d --build
 ```
 
-This will start all the services required for the application and will run the comment scraping process 
+This will start all the services required for the application and will run the comment scraping process
 
 The data processing service (real-time and historical processing) are started through (automatically after build):
 
@@ -69,9 +76,13 @@ The data processing service (real-time and historical processing) are started th
 src/main.py
 ```
 
-### 3. Access the Dashboard
+### 4. Access the Dashboard
 
-Once the system is running, the dashboard for real-time sentiment monitoring can be accessed at the provided address in the browser (configured within the app).
+Once the Docker container has been built and everything is up and running, the dashboard built with Flask and D3.js is accessible at:
+
+```bash
+http://localhost:5000
+```
 
 ## Configuration
 
@@ -88,20 +99,3 @@ The application's settings are managed through `src/config/settings.py` :
 - **Processing**: Real-time sentiment analysis is performed using Flink, and the results are sent to PostgreSQL.
 - **Monitoring**: Track trends and monitor sentiment patterns for ongoing conversations, deep analysis of sentiment across different topics and timeframes through the dashboard.
 - **Exploratory Analytics**: The Master DataSet persistent historical data storing allows for flexible, ad-hoc metrics in a non predefined manner.
-
-
-## Model File Download
-
-Due to the massive size of the `model.h5` file, it has been uploaded to Google Drive. You can download it from the following link:
-
-[Download model.h5](https://drive.google.com/file/d/1KLvUqNJ9HNkYbbA7qw9Z9OfjLeBXs44g/view?usp=sharing)
-
-After downloading, place the file in the `src/model` folder.
-
-
-## Dashboard Access
-
-Once the Docker container has been built and everything is up and running, the dashboard built with Flask and D3.js is accessible at:
-
-```bash
-http://localhost:5000
