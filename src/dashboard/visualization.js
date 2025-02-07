@@ -52,6 +52,7 @@ class DashboardVisualizer {
 
             if (data.error) throw new Error(data.error);
             this.updateDashboard(data);
+            this.translateTextInDocument();
         } catch (error) {
             console.error("Error:", error);
             this.showError(error.message || "Failed to load data. Please try again later.");
@@ -101,17 +102,17 @@ class DashboardVisualizer {
             neutral: this.colors.gray,
             positive: this.colors.success
         };
-        
+
         const data = Object.entries(insights).map(([name, values]) => ({
             name,
             percentage: values.percentage,
             total: values.total,
             color: colorMapping[name] // Assign correct color
         }));
-        
+
         const pie = d3.pie()
             .value(d => d.percentage)
-            .sort(null);        
+            .sort(null);
 
         const arc = d3.arc()
             .innerRadius(radius * 0.5)
@@ -150,9 +151,8 @@ class DashboardVisualizer {
 
                 tooltip.html(`
                     <div class="p-2">
-                        <div class="font-bold">${d.data.name}</div>
-                        <div>Total: ${d.data.total.toLocaleString()}</div>
-                        <div>Percentage: ${d.data.percentage.toFixed(1)}%</div>
+                        <div>${d.data.total.toLocaleString()} : مجموع</div>
+                        <div>%${d.data.percentage.toFixed(1)} : نسبة</div>
                     </div>
                 `)
                     .style("left", (event.pageX + 10) + "px")
@@ -393,7 +393,6 @@ class DashboardVisualizer {
             .attr("height", d => y(d[0]) - y(d[1]))
             .attr("width", x.bandwidth())
             .on("mouseover", (event, d) => {
-                const sentimentType = d3.select(event.currentTarget.parentNode).datum().key;
                 const value = d[1] - d[0];
 
                 tooltip.transition()
@@ -402,8 +401,7 @@ class DashboardVisualizer {
 
                 tooltip.html(`
                 <div class="p-2">
-                    <div class="font-bold">${d.data.topic}</div>
-                    <div>${sentimentType}: ${value.toLocaleString()}</div>
+                    <div>${value.toLocaleString()}</div>
                 </div>
             `)
                     .style("left", (event.pageX + 10) + "px")
@@ -437,9 +435,33 @@ class DashboardVisualizer {
             .attr("x", 20)
             .attr("y", 7.5)
             .attr("dy", "0.32em")
-            .text(d => d.charAt(0).toUpperCase() + d.slice(1));
+            .text(d => d);
     }
+
+    translateTextInDocument() {
+        const translations = {
+            positive: "إيجابي",
+            neutral: "محايد",
+            negative: "سلبي"
+        };
+
+        d3.selectAll("text") // Select all text elements in the chart
+            .each(function () {
+                let textElement = d3.select(this);
+                let text = textElement.text();
+
+                // Replace case-insensitive occurrences
+                Object.keys(translations).forEach(key => {
+                    let regex = new RegExp(key, "gi"); // Case-insensitive replacement
+                    if (regex.test(text)) {
+                        textElement.text(text.replace(regex, translations[key]));
+                    }
+                });
+            });
+    }
+
 }
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', () => {
     const dashboard = new DashboardVisualizer();
