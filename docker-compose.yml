@@ -40,7 +40,6 @@ services:
       - app-network
       - flink-network
 
-
   mongodb:
     image: mongo:latest
     ports:
@@ -93,6 +92,7 @@ services:
         jobmanager.rpc.address: jobmanager
         jobmanager.rpc.port: 6123
         jobmanager.memory.process.size: 1600m
+        classloader.resolve-order: parent-first
     volumes:
       - flink_data:/tmp/flink-checkpoints
     healthcheck:
@@ -116,7 +116,7 @@ services:
         taskmanager.memory.process.size: 1728m
         taskmanager.numberOfTaskSlots: 2
         jobmanager.rpc.address: jobmanager
-        jobmanager.rpc.port: 6123
+        classloader.resolve-order: parent-first
     volumes:
       - flink_data:/tmp/flink-checkpoints
     networks:
@@ -127,6 +127,8 @@ services:
 
   app:
     build: .
+    ports:
+      - "5000:5000"  # Add dashboard port
     depends_on:
       kafka:
         condition: service_healthy
@@ -140,7 +142,7 @@ services:
         condition: service_started
     restart: on-failure
     healthcheck:
-      test: ["CMD", "python", "-c", "import http.client; conn = http.client.HTTPConnection('localhost:8000'); conn.request('GET', '/health'); response = conn.getresponse(); exit(0) if response.status == 200 else exit(1)"]
+      test: ["CMD", "python", "-c", "import http.client; conn = http.client.HTTPConnection('localhost:5000'); conn.request('GET', '/health'); response = conn.getresponse(); exit(0) if response.status == 200 else exit(1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -157,6 +159,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'
       MONGODB_URI: 'mongodb://mongodb:27017/'
       MONGODB_DB: 'hespress_db'
+      FLASK_ENV: 'production'
 
 volumes:
   mongodb_data:
@@ -172,4 +175,4 @@ networks:
     driver: bridge
   default:
     name: app-network
-    driver: bridge 
+    driver: bridge

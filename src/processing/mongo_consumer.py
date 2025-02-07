@@ -96,12 +96,11 @@ class MongoDBConsumer:
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 mongo_future = executor.submit(self._save_to_mongo, comments)
                 stream_future = executor.submit(self.flink_processor.process_stream, comments)
-                batch_future = executor.submit(self.flink_processor.process_batch, comments)
 
                 # Wait for all futures to complete
-                concurrent.futures.wait([mongo_future, stream_future, batch_future], return_when=concurrent.futures.ALL_COMPLETED)
+                concurrent.futures.wait([mongo_future, stream_future], return_when=concurrent.futures.ALL_COMPLETED)
 
-                for future in [mongo_future, stream_future, batch_future]:
+                for future in [mongo_future, stream_future]:
                     if future.exception():
                         raise future.exception()
 
@@ -124,10 +123,11 @@ class MongoDBConsumer:
                 'score': comment.get('score'),
                 'created_at': comment.get('created_at'),
             }
-            comments_to_insert.append(comment_data)
-        
-        if comments_to_insert:
-            result = self.comments_collection.insert_many(comments_to_insert)
-            logging.info(f"Inserted {len(result.inserted_ids)} comments into MongoDB")
-            return len(result.inserted_ids)
-        return 0
+            # Use upsert to avoid duplicate key errors
+            self.comments_collection.update_one(
+                {'id': comment_data['id']},
+                {'$set': comment_data},
+                upsert=True
+            )
+        logging.info(f"Upserted {len(comments)} comments into MongoDB")
+        return len(comments)

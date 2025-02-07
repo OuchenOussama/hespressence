@@ -88,3 +88,20 @@ The application's settings are managed through `src/config/settings.py` :
 - **Processing**: Real-time sentiment analysis is performed using Flink, and the results are sent to PostgreSQL.
 - **Monitoring**: Track trends and monitor sentiment patterns for ongoing conversations, deep analysis of sentiment across different topics and timeframes through the dashboard.
 - **Exploratory Analytics**: The Master DataSet persistent historical data storing allows for flexible, ad-hoc metrics in a non predefined manner.
+
+
+## Model File Download
+
+Due to the massive size of the `model.h5` file, it has been uploaded to Google Drive. You can download it from the following link:
+
+[Download model.h5](https://drive.google.com/file/d/1KLvUqNJ9HNkYbbA7qw9Z9OfjLeBXs44g/view?usp=sharing)
+
+After downloading, place the file in the `src/model` folder.
+
+
+## Dashboard Access
+
+Once the Docker container has been built and everything is up and running, the dashboard built with Flask and D3.js is accessible at:
+
+```bash
+http://localhost:5000

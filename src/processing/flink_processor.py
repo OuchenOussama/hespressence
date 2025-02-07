@@ -15,64 +15,105 @@ class FlinkProcessor:
         
     def _setup_environments(self):
         """Initialize Flink streaming and table environments"""
-        self.stream_env = StreamExecutionEnvironment.get_execution_environment()
-        self.stream_env.enable_checkpointing(Config.FLINK.checkpoint_interval)
-        self.stream_env.get_checkpoint_config().set_min_pause_between_checkpoints(
-            Config.FLINK.min_pause_between_checkpoints
-        )
-        
-        self.table_env = StreamTableEnvironment.create(
-            stream_execution_environment=self.stream_env,
-            environment_settings=EnvironmentSettings.new_instance().in_streaming_mode().build()
-        )
-        
-        manager = FlinkManager()
-        manager.create_kafka_source()
-        manager.create_postgres_sink()
+        try:
+            # Initialize environments
+            self.stream_env = StreamExecutionEnvironment.get_execution_environment()
+            self.stream_env.enable_checkpointing(Config.FLINK.checkpoint_interval)
+            self.stream_env.get_checkpoint_config().set_min_pause_between_checkpoints(
+                Config.FLINK.min_pause_between_checkpoints
+            )
+            
+            self.table_env = StreamTableEnvironment.create(
+                stream_execution_environment=self.stream_env,
+                environment_settings=EnvironmentSettings.new_instance().in_streaming_mode().build()
+            )
+            
+            # # Detailed logging of catalog information
+            # logging.info("Available catalogs:")
+            # try:
+            #     catalogs = self.table_env.list_catalogs()
+            #     logging.info(f"Catalogs: {catalogs}")
+            # except Exception as catalog_error:
+            #     logging.error(f"Error listing catalogs: {catalog_error}")
+            
+            # # Explicitly create the table before processing
+            # manager = FlinkManager()
+            # try:
+            #     manager.create_postgres_sink()
+            #     logging.info("PostgreSQL sink created successfully")
+            # except Exception as sink_error:
+            #     logging.error(f"Failed to create PostgreSQL sink: {sink_error}")
+            #     raise
+            
+            # try:
+            #     manager.create_kafka_source()
+            #     logging.info("Kafka source created successfully")
+            # except Exception as source_error:
+            #     logging.error(f"Failed to create Kafka source: {source_error}")
+            #     raise
+            
+        except Exception as e:
+            logging.error(f"Error setting up environments: {str(e)}")
+            raise
 
     def process_stream(self, comments: List[Dict[str, Any]]) -> None:
-        """
-        Real-time stream processing of comments and store in PostgreSQL
-        """
         try:
-            # Convert comments to DataStream
+            # Log the incoming comments
+            logging.info(f"Processing {len(comments)} comments")
+            
+            # Ensure the sink table is created
+            FlinkManager().create_postgres_sink()
+            
+            # Detailed logging for each step
+            logging.info("Dropping temporary view if exists")
+            self.table_env.execute_sql("DROP TEMPORARY VIEW IF EXISTS temp_comments")
+            
+            logging.info("Converting comments to DataStream")
             comments_stream = self.stream_env.from_collection(
                 collection=comments,
                 type_info=Types.ROW_NAMED(
                     ['id', 'article_title', 'article_url', 'user_comment', 'topic', 'score', 'created_at'],
                     [Types.STRING(), Types.STRING(), Types.STRING(), Types.STRING(), 
-                     Types.STRING(), Types.DOUBLE(), Types.SQL_TIMESTAMP()]
+                    Types.STRING(), Types.DOUBLE(), Types.SQL_TIMESTAMP()]
                 )
             )
             
-            # Create Table from DataStream
+            logging.info("Creating Table from DataStream")
             comments_table = self.table_env.from_data_stream(comments_stream)
             
-            # Register for SQL querying
+            logging.info("Creating temporary view")
             self.table_env.create_temporary_view("temp_comments", comments_table)
-            
-            # Insert into PostgreSQL using Flink SQL
-            insert_sql = """
-                INSERT INTO processed_comments 
+
+            logging.info("Executing INSERT statement")
+            insert_result = self.table_env.execute_sql("""
+                INSERT INTO processed_comments
                 SELECT 
                     id, article_title, article_url, user_comment, 
                     topic, score, created_at,
                     CURRENT_TIMESTAMP as stored_at
                 FROM temp_comments
-            """
-            
-            self.table_env.execute_sql(insert_sql)
-            logging.info("Comments inserted into PostgreSQL successfully.")
-            
+            """)
+
+            # Log insert result details
+            logging.info(f"Insert operation result: {insert_result}")
+            logging.info("Comments inserted into temporary table successfully.")
+
         except Exception as e:
-            logging.error(f"Error in stream processing: {str(e)}")
+            logging.error(f"Comprehensive error in stream processing: {str(e)}")
+            # Log the full stack trace
+            import traceback
+            logging.error(traceback.format_exc())
             raise e
+
 
     def process_batch(self, comments: List[Dict[str, Any]]) -> None:
         """
         Batch processing for historical analysis or model retraining
         """
         try:
+            # Drop the temporary view if it already exists
+            self.table_env.execute_sql("DROP TEMPORARY VIEW IF EXISTS comments_batch")
+            
             # Convert comments to Table
             comments_table = self.table_env.from_elements(
                 comments,
@@ -92,7 +133,6 @@ class FlinkProcessor:
                     MAX(created_at) as latest_comment
                 FROM comments_batch
                 GROUP BY topic
-                ORDER BY comment_count DESC
             """)
             
             # Execute batch processing
