@@ -84,6 +84,9 @@ Once the Docker container has been built and everything is up and running, the d
 http://localhost:5000
 ```
 
+![System Architecture](dashboard_screencast.png)
+
+
 ## Configuration
 
 The application's settings are managed through `src/config/settings.py` :
