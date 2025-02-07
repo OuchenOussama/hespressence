@@ -96,19 +96,22 @@ class DashboardVisualizer {
         const radius = Math.min(width, height) / 2 - 20;
 
         // Transform insights data for D3
+        const colorMapping = {
+            negative: this.colors.danger,
+            neutral: this.colors.gray,
+            positive: this.colors.success
+        };
+        
         const data = Object.entries(insights).map(([name, values]) => ({
             name,
             percentage: values.percentage,
-            total: values.total
+            total: values.total,
+            color: colorMapping[name] // Assign correct color
         }));
-
-        const color = d3.scaleOrdinal()
-            .domain(data.map(d => d.name))
-            .range([this.colors.danger, this.colors.warning, this.colors.success]);
-
+        
         const pie = d3.pie()
             .value(d => d.percentage)
-            .sort(null);
+            .sort(null);        
 
         const arc = d3.arc()
             .innerRadius(radius * 0.5)
@@ -131,7 +134,7 @@ class DashboardVisualizer {
 
         arcs.append("path")
             .attr("d", arc)
-            .attr("fill", d => color(d.data.name))
+            .attr("fill", d => d.data.color)
             .attr("stroke", "white")
             .attr("stroke-width", 2)
             .style("transition", "transform 0.2s")
@@ -340,7 +343,7 @@ class DashboardVisualizer {
         const colors = {
             positive: this.colors.success,  // success green
             negative: this.colors.danger, // danger red
-            neutral: this.colors.warning    // gray
+            neutral: this.colors.gray    // gray
         };
 
         const g = svg.append("g")
