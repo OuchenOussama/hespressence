@@ -10,7 +10,7 @@ from flask_socketio import SocketIO
 def run_collector(collector):
     while True:
         collector.collect_comments()
-        sleep(180)  # Run every 3 minutes
+        sleep(20)  # Run every 20 seconds
 
 def run_dashboard():
     socketio = SocketIO(DashboardApp().app)
