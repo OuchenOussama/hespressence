@@ -60,7 +60,7 @@ Due to the massive size of the `model.h5` file, it has been uploaded to Google D
 
 This model was obtained through the notebook : [Model Colab Notebook](https://colab.research.google.com/drive/18nUeijbLJ-TylOsUuoWV8SltvnoITZmF)
 
-Training was performed on a dataset that consists of approximately 16,000 comments scraped from Hespress : [Training Dataset](https://drive.google.com/file/d/1APBQB6KiNWQlpIS7RNo0FnRn8w-BlL9F/view)
+Training was performed on a [dataset](https://drive.google.com/file/d/1APBQB6KiNWQlpIS7RNo0FnRn8w-BlL9F/view) that consists of approximately 16,000 comments scraped from Hespress.
 
 After downloading, place the file in the `src/model` folder.
 
